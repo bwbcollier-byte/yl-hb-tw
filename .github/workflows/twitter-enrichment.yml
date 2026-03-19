@@ -2,7 +2,7 @@ name: Twitter Airtable Enrichment
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Every 6 hours
+    - cron: '0 */4 * * *' # Every 4 hours (6 times a day)
   workflow_dispatch: # Allow manual trigger
 
 jobs:

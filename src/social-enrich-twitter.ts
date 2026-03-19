@@ -116,6 +116,7 @@ async function processRecord(record: any) {
   }
 
   console.log(`   ✨ Found Profile: ${data.name} (Followers: ${data.sub_count})`);
+  console.log(`   ✅ Prepared fields for ${artistName}. Ready to update.`);
 
   // Map fields to Airtable (casting everything to string to avoid schema errors)
   const updateFields: any = {
