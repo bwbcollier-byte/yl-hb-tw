@@ -1,0 +1,29 @@
+{
+  "name": "yl-hb-tw",
+  "version": "1.0.0",
+  "description": "Twitter enrichment pipeline for social profiles in Airtable",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node src/social-enrich-twitter.ts",
+    "enrich": "ts-node src/social-enrich-twitter.ts",
+    "build": "tsc"
+  },
+  "keywords": [
+    "twitter",
+    "airtable",
+    "enrichment"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "airtable": "^0.12.2",
+    "dotenv": "^16.4.1",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "@types/node-fetch": "^2.6.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
