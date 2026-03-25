@@ -6,13 +6,13 @@ dotenv.config();
 
 // Configuration
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
-// The RapidAPI key should be set in GitHub Secrets as RAPIDAPI_KEY
+// The RapidAPI key should be set in environment or GitHub Secrets
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || '8f8ab324eamsh88b8de70b402e0cp1d7d0ajsn13c934eadbd9';
 const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST || 'twitter-api45.p.rapidapi.com';
 
-const BASE_ID = 'appeEtXFQewBWyLHJ';
-const TABLE_ID = 'tbl0c5xkbHuJlkvfB';
-const VIEW_ID = 'viw3AoPRFDwumfMLT'; // "To Process"
+const BASE_ID = 'appENJEi9WyVXFrNU';
+const TABLE_ID = 'tbl49Xnh3IIYjOi5q';
+const VIEW_ID = 'viwePAyCNsRjuUItm'; // "Soc_Twitter"
 
 if (!AIRTABLE_API_KEY) {
   console.error('❌ Missing AIRTABLE_API_KEY in environment.');
@@ -59,8 +59,8 @@ async function fetchTwitterUserInfo(handle: string) {
     
     if (!response.ok) {
         if (response.status === 429) {
-            console.log('      ⚠️ Rate limited. Sleeping 2s...');
-            await sleep(2000);
+            console.log('      ⚠️ Rate limited. Sleeping 5s...');
+            await sleep(5000);
             return fetchTwitterUserInfo(handle);
         }
         return null;
@@ -81,13 +81,13 @@ async function fetchTwitterUserInfo(handle: string) {
 
 async function processRecord(record: any) {
   const fields = record.fields;
-  const twitterInput = fields['Soc Twitter'];
-  const artistName = fields['Name'] || 'Unknown Artist';
+  const twitterInput = fields['soc_twitter'];
+  const artistName = fields['Name'] || fields['sp_name'] || 'Unknown Artist';
 
   if (!twitterInput) {
       return {
           id: record.id,
-          fields: { 'Soc Twitter Status': 'No URL' }
+          fields: { 'tw_status': 'No URL' }
       };
   }
 
@@ -96,7 +96,7 @@ async function processRecord(record: any) {
       console.log(`   ⚠️ Invalid handle for: ${artistName} (${twitterInput})`);
       return {
           id: record.id,
-          fields: { 'Soc Twitter Status': 'Invalid Handle' }
+          fields: { 'tw_status': 'Invalid Handle' }
       };
   }
 
@@ -109,8 +109,8 @@ async function processRecord(record: any) {
     return {
       id: record.id,
       fields: {
-        'Soc Twitter Status': 'Not Found',
-        'Soc Twitter Check': new Date().toISOString().split('T')[0]
+        'tw_status': 'Not Found',
+        'tw_last_check': new Date().toISOString().split('T')[0]
       }
     };
   }
@@ -118,24 +118,25 @@ async function processRecord(record: any) {
   console.log(`   ✨ Found Profile: ${data.name} (Followers: ${data.sub_count})`);
   console.log(`   ✅ Prepared fields for ${artistName}. Ready to update.`);
 
-  // Map fields to Airtable (casting everything to string to avoid schema errors)
+  // Map fields to Airtable (casting everything to string to avoid schema errors if columns are text)
   const updateFields: any = {
-    'Soc Twitter Name': String(data.name || ''),
-    'Soc Twitter ID': String(data.rest_id || data.id || ''),
-    'Soc Twitter Bio': String(data.desc || ''),
-    'Soc Twitter Followers': String(data.sub_count || 0),
-    'Soc Twitter Following': String(data.friends || 0),
-    'Soc Twitter Tweets': String(data.statuses_count || 0),
-    'Soc Twitter Verified': data.blue_verified ? 'Yes' : 'No', // Text field
-    'Soc Twitter Affiliate': data.affiliates?.label?.description ? String(data.affiliates.label.description) : null,
-    'Soc Twitter Location': String(data.location || ''),
-    'Soc Twitter Website': String(data.website || ''),
-    'Soc Twitter Created At': String(data.created_at || ''),
-    'Soc Twitter Avatar': String(data.avatar || ''),
-    'Soc Twitter Banner': String(data.header_image || ''),
-    'Soc Twitter Media Count': String(data.media_count || 0),
-    'Soc Twitter Check': new Date().toISOString().split('T')[0],
-    'Soc Twitter Status': 'Done'
+    'tw_url': `https://twitter.com/${handle}`,
+    'tw_twitter_name': String(data.name || ''),
+    'tw_identifier': String(data.rest_id || data.id || ''),
+    'tw_description': String(data.desc || ''),
+    'tw_followers': String(data.sub_count || 0),
+    'tw_following': String(data.friends || 0),
+    'tw_media_count': String(data.media_count || 0),
+    'tw_image_media_count': String(data.media_count || 0),
+    'tw_verified': data.blue_verified ? 'Yes' : 'No', 
+    'tw_affiliate': data.affiliates?.label?.description ? String(data.affiliates.label.description) : null,
+    'tw_location': String(data.location || ''),
+    'tw_website': String(data.website || ''),
+    'tw_created': String(data.created_at || ''),
+    'tw_image': String(data.avatar || ''),
+    'tw_image_banner': String(data.header_image || ''),
+    'tw_last_check': new Date().toISOString().split('T')[0],
+    'tw_status': 'Done'
   };
 
   // Clean up undefined/null values
@@ -152,11 +153,11 @@ async function processRecord(record: any) {
 }
 
 async function main() {
-  console.log('\n🚀 Starting Continuous Twitter RapidAPI enrichment...');
+  console.log('\n🚀 Starting Continuous Twitter RapidAPI enrichment (New Schema)...');
   console.log(`📡 Base: ${BASE_ID} | Table: ${TABLE_ID} | View: ${VIEW_ID}`);
 
   let totalProcessed = 0;
-  const BATCH_GET_SIZE = 50; // Fetch 50 at a time from view
+  const BATCH_GET_SIZE = 50; 
   
   try {
     while (true) {
@@ -167,7 +168,7 @@ async function main() {
       }).firstPage();
 
       if (!records || records.length === 0) {
-        console.log('✅ No more records found in "To Process" view.');
+        console.log('✅ No more records found in "Soc_Twitter" view.');
         break;
       }
 
@@ -204,7 +205,7 @@ async function main() {
           }
         }
         // Short delay to stay within Twitter API rate limits
-        await sleep(400);
+        await sleep(500);
       }
     }
 
