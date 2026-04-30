@@ -37,6 +37,7 @@ jobs:
           AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
           RAPIDAPI_HOST: "twitter-api45.p.rapidapi.com"
+          TIME_BUDGET_MINUTES: "50"
         run: npm start
       - name: Notify Supabase — result
         if: always()

@@ -153,14 +153,26 @@ async function processRecord(record: any) {
 }
 
 async function main() {
+  const START_TIME = Date.now();
+  const TIME_BUDGET_MINUTES = parseInt(process.env.TIME_BUDGET_MINUTES || '50', 10);
+  const TIME_BUDGET_MS = TIME_BUDGET_MINUTES * 60 * 1000;
+
+  const isTimeBudgetReached = () => (Date.now() - START_TIME) >= TIME_BUDGET_MS;
+
   console.log('\n🚀 Starting Continuous Twitter RapidAPI enrichment (New Schema)...');
   console.log(`📡 Base: ${BASE_ID} | Table: ${TABLE_ID} | View: ${VIEW_ID}`);
+  console.log(`⏱️  Time budget: ${TIME_BUDGET_MINUTES} minutes`);
 
   let totalProcessed = 0;
-  const BATCH_GET_SIZE = 50; 
-  
+  const BATCH_GET_SIZE = 50;
+
   try {
     while (true) {
+      if (isTimeBudgetReached()) {
+        console.log(`\n⏱️  Time budget reached (${TIME_BUDGET_MINUTES} min), stopping gracefully.`);
+        break;
+      }
+
       console.log(`\n📥 Fetching next ${BATCH_GET_SIZE} records from view...`);
       const records = await table.select({
         view: VIEW_ID,
@@ -178,6 +190,22 @@ async function main() {
       const airtableBatchSize = 10;
 
       for (let i = 0; i < records.length; i++) {
+        if (isTimeBudgetReached()) {
+          console.log(`\n⏱️  Time budget reached (${TIME_BUDGET_MINUTES} min), stopping gracefully.`);
+          // Flush any pending batch before exiting
+          if (currentBatch.length > 0) {
+            console.log(`💾 Flushing remaining batch of ${currentBatch.length} updates before exit...`);
+            try {
+              await table.update(currentBatch);
+              totalProcessed += currentBatch.length;
+            } catch (error: any) {
+              console.error(`❌ Final batch flush failed: ${error.message}`);
+            }
+          }
+          console.log(`\n🏁 Stopped early. Total processed: ${totalProcessed} records.`);
+          process.exit(0);
+        }
+
         const updateData = await processRecord(records[i]);
         if (updateData) {
           currentBatch.push(updateData);
