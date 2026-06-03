@@ -18,7 +18,7 @@
   "dependencies": {
     "airtable": "^0.12.2",
     "dotenv": "^16.4.1",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "@types/node": "^20.11.5",
